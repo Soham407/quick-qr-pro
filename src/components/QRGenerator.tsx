@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Lock } from "lucide-react";
 import QRCodeStyling from "qr-code-styling";
+import { useNavigate } from "react-router-dom";
 
 interface QRGeneratorProps {
   onGenerate?: (url: string) => void;
@@ -14,6 +15,7 @@ const QRGenerator = ({ onGenerate }: QRGeneratorProps) => {
   const [qrGenerated, setQrGenerated] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (qrGenerated && qrRef.current && url) {
@@ -100,7 +102,7 @@ const QRGenerator = ({ onGenerate }: QRGeneratorProps) => {
                   <Lock className="w-12 h-12 text-primary mb-3" />
                   <p className="text-lg font-semibold text-foreground mb-2">Your QR Code is Ready!</p>
                   <p className="text-sm text-muted-foreground mb-4">Sign up to unlock and download</p>
-                  <Button variant="hero" size="lg">
+                  <Button variant="hero" size="lg" onClick={() => navigate('/signin')}>
                     Sign Up to Unlock
                   </Button>
                 </div>
