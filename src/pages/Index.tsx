@@ -2,6 +2,7 @@ import { Sparkles, Palette, BarChart3, Zap, Shield, Download } from "lucide-reac
 import QRGenerator from "@/components/QRGenerator";
 import FeatureCard from "@/components/FeatureCard";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Index = () => {
@@ -10,18 +11,24 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Quick QR
             </span>
-          </div>
+          </Link>
           <nav className="flex items-center gap-4">
-            <Button variant="ghost" size="sm">Features</Button>
-            <Button variant="ghost" size="sm">Pricing</Button>
-            <Button variant="outline" size="sm">Sign In</Button>
+            <Link to="/features">
+              <Button variant="ghost" size="sm">Features</Button>
+            </Link>
+            <Link to="/pricing">
+              <Button variant="ghost" size="sm">Pricing</Button>
+            </Link>
+            <Link to="/signin">
+              <Button variant="outline" size="sm">Sign In</Button>
+            </Link>
             <Button variant="hero" size="sm">Get Started</Button>
           </nav>
         </div>
@@ -124,9 +131,11 @@ const Index = () => {
               <Button variant="hero" size="xl">
                 Create Your First QR Code
               </Button>
-              <Button variant="outline" size="xl">
-                View Pricing
-              </Button>
+              <Link to="/pricing">
+                <Button variant="outline" size="xl">
+                  View Pricing
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -146,9 +155,9 @@ const Index = () => {
               © 2025 Quick QR. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+              <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
             </div>
           </div>
         </div>
