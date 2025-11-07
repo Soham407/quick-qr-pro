@@ -76,7 +76,7 @@ const Pricing = () => {
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5" />
-                    <span>Basic analytics</span>
+                    <span>Download in multiple formats</span>
                   </li>
                 </ul>
                 <Link to="/" className="block">
@@ -107,19 +107,19 @@ const Pricing = () => {
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5" />
-                    <span>Unlimited Dynamic QR Codes</span>
+                    <span>Dynamic QR Codes at $10/year each</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5" />
-                    <span>Edit destination anytime</span>
+                    <span>Edit destination URL anytime</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5" />
-                    <span>Advanced scan analytics</span>
+                    <span>Advanced scan analytics & tracking</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5" />
-                    <span>Priority support</span>
+                    <span>Priority email support</span>
                   </li>
                 </ul>
                 <Link to="/signin" className="block">
