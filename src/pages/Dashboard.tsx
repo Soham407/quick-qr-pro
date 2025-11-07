@@ -78,7 +78,7 @@ const Dashboard = () => {
                 Create and manage your QR codes
               </p>
             </div>
-            <Button variant="hero" size="lg">
+            <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
               <Plus className="w-5 h-5 mr-2" />
               Create New QR
             </Button>
@@ -135,7 +135,7 @@ const Dashboard = () => {
                 Get started by creating your first QR code. You can create up to 20 static codes
                 and 1 dynamic code on the free plan.
               </p>
-              <Button variant="hero" size="lg">
+              <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First QR Code
               </Button>
