@@ -29,7 +29,9 @@ const Index = () => {
             <Link to="/signin">
               <Button variant="outline" size="sm">Sign In</Button>
             </Link>
-            <Button variant="hero" size="sm">Get Started</Button>
+            <Link to="/signin">
+              <Button variant="hero" size="sm">Get Started</Button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -128,9 +130,11 @@ const Index = () => {
               Join thousands of users creating professional QR codes for their business and personal projects.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="xl">
-                Create Your First QR Code
-              </Button>
+              <Link to="/signin">
+                <Button variant="hero" size="xl">
+                  Create Your First QR Code
+                </Button>
+              </Link>
               <Link to="/pricing">
                 <Button variant="outline" size="xl">
                   View Pricing
