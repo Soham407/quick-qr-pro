@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import QRCodeStyling from "qr-code-styling";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreateQR = () => {
   const navigate = useNavigate();
@@ -19,10 +20,22 @@ const CreateQR = () => {
   const [cornerColor, setCornerColor] = useState("#47D7D7");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const [saving, setSaving] = useState(false);
   
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/signin");
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   // Generate/Update QR Code
   useEffect(() => {
@@ -91,7 +104,7 @@ const CreateQR = () => {
     toast.success("QR Code downloaded successfully!");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!qrName.trim()) {
       toast.error("Please enter a name for your QR code");
       return;
@@ -101,11 +114,98 @@ const CreateQR = () => {
       return;
     }
 
-    // TODO: Save to database via Supabase
-    toast.success("QR Code saved successfully!");
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1000);
+    setSaving(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to save QR codes");
+        navigate("/signin");
+        return;
+      }
+
+      // Upload logo if present
+      let logoUrl = "";
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('qr-logos')
+          .upload(fileName, logoFile);
+
+        if (uploadError) {
+          console.error("Logo upload error:", uploadError);
+          toast.error("Failed to upload logo");
+          setSaving(false);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('qr-logos')
+          .getPublicUrl(fileName);
+        
+        logoUrl = publicUrl;
+      }
+
+      // Calculate expiry for dynamic codes (30 days trial)
+      let expiresAt = null;
+      if (qrType === 'dynamic') {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
+        expiresAt = expiry.toISOString();
+      }
+
+      // Insert QR code
+      const { data: qrData, error: qrError } = await supabase
+        .from('qr_codes')
+        .insert({
+          user_id: user.id,
+          name: qrName,
+          type: qrType,
+          destination_url: destinationUrl,
+          status: 'active',
+          expires_at: expiresAt,
+        })
+        .select()
+        .single();
+
+      if (qrError) {
+        console.error("QR code insert error:", qrError);
+        toast.error("Failed to save QR code");
+        setSaving(false);
+        return;
+      }
+
+      // Insert design settings
+      const { error: designError } = await supabase
+        .from('qr_design')
+        .insert({
+          qr_code_id: qrData.id,
+          frame_text: frameText,
+          logo_url: logoUrl,
+          dot_color: qrColor,
+          background_color: '#ffffff',
+        });
+
+      if (designError) {
+        console.error("Design insert error:", designError);
+        toast.error("Failed to save design settings");
+        setSaving(false);
+        return;
+      }
+
+      toast.success("QR Code saved successfully!");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("An error occurred while saving");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -133,8 +233,8 @@ const CreateQR = () => {
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
-            <Button variant="hero" onClick={handleSave}>
-              Save QR Code
+            <Button variant="hero" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save QR Code"}
             </Button>
           </div>
         </div>

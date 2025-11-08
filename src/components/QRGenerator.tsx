@@ -102,7 +102,7 @@ const QRGenerator = ({ onGenerate }: QRGeneratorProps) => {
                   <Lock className="w-12 h-12 text-primary mb-3" />
                   <p className="text-lg font-semibold text-foreground mb-2">Your QR Code is Ready!</p>
                   <p className="text-sm text-muted-foreground mb-4">Sign up to unlock and download</p>
-                  <Button variant="hero" size="lg" onClick={() => navigate('/signin')}>
+                  <Button variant="hero" size="lg" onClick={() => navigate('/signup')}>
                     Sign Up to Unlock
                   </Button>
                 </div>

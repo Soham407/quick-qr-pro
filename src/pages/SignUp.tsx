@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-const SignIn = () => {
+const SignUp = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,20 +24,25 @@ const SignIn = () => {
     checkUser();
   }, [navigate]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const redirectUrl = `${window.location.origin}/dashboard`;
+
+    const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Signed in successfully!");
-      navigate("/dashboard");
+      toast.success("Account created! Please check your email to verify.");
+      navigate("/signin");
     }
     setLoading(false);
   };
@@ -55,15 +60,15 @@ const SignIn = () => {
           </span>
         </Link>
 
-        {/* Sign In Card */}
+        {/* Sign Up Card */}
         <Card className="p-8">
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold">Welcome back</h1>
-              <p className="text-muted-foreground">Sign in to your account to continue</p>
+              <h1 className="text-2xl font-bold">Create your account</h1>
+              <p className="text-muted-foreground">Sign up to start creating QR codes</p>
             </div>
 
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input 
@@ -84,7 +89,11 @@ const SignIn = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={6}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 6 characters
+                </p>
               </div>
               <Button 
                 variant="hero" 
@@ -93,14 +102,14 @@ const SignIn = () => {
                 type="submit"
                 disabled={loading}
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
 
             <div className="text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link to="/signup" className="text-primary hover:underline font-medium">
-                Sign up
+              <span className="text-muted-foreground">Already have an account? </span>
+              <Link to="/signin" className="text-primary hover:underline font-medium">
+                Sign in
               </Link>
             </div>
           </div>
@@ -121,4 +130,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SignUp;

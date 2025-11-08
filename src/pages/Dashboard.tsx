@@ -1,36 +1,86 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Plus, QrCode, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Sparkles, Plus, QrCode, Trash2, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
+
+interface QRCodeData {
+  id: string;
+  name: string;
+  type: string;
+  destination_url: string;
+  status: string;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [qrCodes, setQrCodes] = useState<QRCodeData[]>([]);
 
   useEffect(() => {
-    // Check if user is logged in
-    // For now, this is a placeholder - will be replaced with real auth
-    const checkAuth = () => {
-      // TODO: Replace with actual Supabase auth check
-      const isLoggedIn = false; // Placeholder
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!isLoggedIn) {
-        navigate('/signin');
-      } else {
-        setUser({ email: 'user@example.com' }); // Placeholder
+      if (!session) {
+        navigate("/signin");
+        return;
       }
+      
+      setUser(session.user);
+      await fetchQRCodes();
       setLoading(false);
     };
 
     checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/signin");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = () => {
-    // TODO: Implement actual logout
-    navigate('/');
+  const fetchQRCodes = async () => {
+    const { data, error } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("Failed to load QR codes");
+      console.error(error);
+    } else {
+      setQrCodes(data || []);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from("qr_codes")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to delete QR code");
+    } else {
+      toast.success("QR code deleted");
+      fetchQRCodes();
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/signin");
   };
 
   if (loading) {
@@ -40,6 +90,9 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const staticCount = qrCodes.filter(qr => qr.type === 'static').length;
+  const dynamicCount = qrCodes.filter(qr => qr.type === 'dynamic').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -90,7 +143,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Total QR Codes</p>
-                  <p className="text-3xl font-bold">0</p>
+                  <p className="text-3xl font-bold">{qrCodes.length}</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <QrCode className="w-6 h-6 text-primary" />
@@ -102,7 +155,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Static Codes</p>
-                  <p className="text-3xl font-bold">0 / 20</p>
+                  <p className="text-3xl font-bold">{staticCount} / 20</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
                   <QrCode className="w-6 h-6 text-accent" />
@@ -114,7 +167,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Dynamic Codes</p>
-                  <p className="text-3xl font-bold">0 / 1</p>
+                  <p className="text-3xl font-bold">{dynamicCount} / 1</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                   <QrCode className="w-6 h-6 text-white" />
@@ -124,23 +177,56 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Empty State */}
-          <Card className="p-12">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center">
-                <QrCode className="w-8 h-8 text-muted-foreground" />
+          {/* QR Codes List or Empty State */}
+          {qrCodes.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center">
+                  <QrCode className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold">No QR codes yet</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Get started by creating your first QR code. You can create up to 20 static codes
+                  and 1 dynamic code on the free plan.
+                </p>
+                <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Your First QR Code
+                </Button>
               </div>
-              <h3 className="text-xl font-semibold">No QR codes yet</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Get started by creating your first QR code. You can create up to 20 static codes
-                and 1 dynamic code on the free plan.
-              </p>
-              <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
-                <Plus className="w-5 h-5 mr-2" />
-                Create Your First QR Code
-              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {qrCodes.map((qr) => (
+                <Card key={qr.id} className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold">{qr.name}</h3>
+                        <p className="text-sm text-muted-foreground capitalize">{qr.type}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(qr.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-muted-foreground truncate">
+                        {qr.destination_url}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="capitalize">{qr.status}</span>
+                      <span>{new Date(qr.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </Card>
+          )}
         </div>
       </main>
     </div>
