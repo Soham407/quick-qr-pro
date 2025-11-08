@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import QRCodeStyling from "qr-code-styling";
+import QRCodeStyling, { type Options as QRCodeOptions } from "qr-code-styling";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateUniqueShortCode } from "@/lib/qr-utils";
@@ -45,25 +45,25 @@ const CreateQR = () => {
         qrRef.current.innerHTML = "";
       }
 
-      const qrOptions: any = {
+      const qrOptions: Partial<QRCodeOptions> = {
         width: 300,
         height: 300,
         type: "svg",
         data: destinationUrl,
         dotsOptions: {
           color: qrColor,
-          type: "rounded",
+          type: "rounded" as const,
         },
         backgroundOptions: {
           color: "#ffffff",
         },
         cornersSquareOptions: {
           color: cornerColor,
-          type: "extra-rounded",
+          type: "extra-rounded" as const,
         },
         cornersDotOptions: {
           color: cornerColor,
-          type: "dot",
+          type: "dot" as const,
         },
       };
 

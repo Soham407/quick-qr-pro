@@ -1,4 +1,4 @@
-// @ts-ignore: Deno imports
+// @ts-expect-error Remote ESM import for Deno edge function
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 const corsHeaders = {
@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// @ts-ignore: Deno runtime
-Deno.serve(async (req: any) => {
+// @ts-expect-error Deno global provided by edge runtime
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,11 +28,11 @@ Deno.serve(async (req: any) => {
 
     console.log(`Report received for short code: ${shortCode}, reason: ${reason}`);
 
-    // Initialize Supabase client
-    // @ts-ignore: Deno env
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    // @ts-ignore: Deno env
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  // Initialize Supabase client
+  // @ts-expect-error Deno.env provided at runtime
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  // @ts-expect-error Deno.env provided at runtime
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Find QR code by short_url

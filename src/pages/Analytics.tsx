@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, ArrowLeft, TrendingUp, Globe, Smartphone, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import type { User, Session } from "@supabase/supabase-js";
 
 interface QRCodeData {
   id: string;
@@ -39,39 +40,12 @@ interface DeviceStats {
 const Analytics = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [qrCode, setQrCode] = useState<QRCodeData | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/signin");
-        return;
-      }
-      
-      setUser(session.user);
-      await fetchData();
-      setLoading(false);
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      if (!session) {
-        navigate("/signin");
-      } else {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!id) {
       toast.error("QR Code ID is missing");
       navigate("/dashboard");
@@ -112,7 +86,34 @@ const Analytics = () => {
     } else {
       setAnalytics(analyticsData || []);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/signin");
+        return;
+      }
+      
+      setUser(session.user);
+      await fetchData();
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session: Session | null) => {
+      if (!session) {
+        navigate("/signin");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, id, fetchData]);
 
   if (loading) {
     return (

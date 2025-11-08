@@ -1,4 +1,4 @@
-// @ts-ignore: Deno imports
+// @ts-expect-error Remote ESM import for Deno edge function
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 const corsHeaders = {
@@ -6,15 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface QRCode {
-  id: string;
-  destination_url: string;
-  status: string;
-  type: string;
-}
 
-// @ts-ignore: Deno runtime
-Deno.serve(async (req: any) => {
+// Edge function handler (Deno global available at runtime)
+// @ts-expect-error Deno global provided by the edge runtime
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,10 +26,10 @@ Deno.serve(async (req: any) => {
     console.log(`Redirect requested for short code: ${shortCode}`);
 
     // Initialize Supabase client
-    // @ts-ignore: Deno env
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    // @ts-ignore: Deno env
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  // @ts-expect-error Deno.env provided at runtime
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  // @ts-expect-error Deno.env provided at runtime
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Find QR code by short_url
@@ -150,7 +145,7 @@ Deno.serve(async (req: any) => {
     const cfCity = req.headers.get('cf-ipcity') || 'Unknown';
 
     // Insert analytics (fire and forget)
-    supabase
+    void supabase
       .from('qr_analytics')
       .insert({
         qr_code_id: qrCode.id,
@@ -158,8 +153,11 @@ Deno.serve(async (req: any) => {
         city: cfCity,
         device_type: deviceType,
       })
-      .then(({ error }: any) => {
-        if (error) console.error('Analytics insert error:', error);
+      .then((res: unknown) => {
+        if (typeof res === 'object' && res !== null && 'error' in res) {
+          const r = res as { error?: unknown };
+          if (r.error) console.error('Analytics insert error:', r.error);
+        }
       });
 
     console.log(`Redirecting to: ${qrCode.destination_url}`);

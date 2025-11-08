@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import type { User } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, ArrowLeft, AlertTriangle, Check, X } from "lucide-react";
@@ -23,7 +24,7 @@ const Moderation = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [reportedCodes, setReportedCodes] = useState<ReportedQRCode[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {

@@ -14,8 +14,11 @@ export function generateShortCode(): string {
 /**
  * Check if a short code is already in use
  */
+import { type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
+
 export async function isShortCodeAvailable(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   shortCode: string
 ): Promise<boolean> {
   const { data, error } = await supabase
@@ -35,7 +38,7 @@ export async function isShortCodeAvailable(
 /**
  * Generate a unique short code that's not already in use
  */
-export async function generateUniqueShortCode(supabase: any): Promise<string> {
+export async function generateUniqueShortCode(supabase: SupabaseClient<Database>): Promise<string> {
   let attempts = 0;
   const maxAttempts = 10;
 
