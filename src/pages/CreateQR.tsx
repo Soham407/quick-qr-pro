@@ -45,7 +45,7 @@ const CreateQR = () => {
         qrRef.current.innerHTML = "";
       }
 
-      qrCode.current = new QRCodeStyling({
+      const qrOptions: any = {
         width: 300,
         height: 300,
         type: "svg",
@@ -65,12 +65,18 @@ const CreateQR = () => {
           color: cornerColor,
           type: "dot",
         },
-        imageOptions: logoPreview ? {
+      };
+
+      // Only add image options if logo is present
+      if (logoPreview) {
+        qrOptions.image = logoPreview;
+        qrOptions.imageOptions = {
           crossOrigin: "anonymous",
           margin: 8,
-        } : undefined,
-        image: logoPreview || undefined,
-      });
+        };
+      }
+
+      qrCode.current = new QRCodeStyling(qrOptions);
 
       qrCode.current.append(qrRef.current);
     }
