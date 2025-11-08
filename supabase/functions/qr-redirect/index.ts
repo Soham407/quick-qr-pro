@@ -1,3 +1,4 @@
+// @ts-ignore: Deno imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 const corsHeaders = {
@@ -12,7 +13,8 @@ interface QRCode {
   type: string;
 }
 
-Deno.serve(async (req) => {
+// @ts-ignore: Deno runtime
+Deno.serve(async (req: any) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,7 +31,9 @@ Deno.serve(async (req) => {
     console.log(`Redirect requested for short code: ${shortCode}`);
 
     // Initialize Supabase client
+    // @ts-ignore: Deno env
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    // @ts-ignore: Deno env
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -79,6 +83,20 @@ Deno.serve(async (req) => {
                 margin-top: 1rem;
                 font-weight: 500;
               }
+              .report-link {
+                margin-top: 2rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e2e8f0;
+              }
+              .report-link a {
+                color: #64748b;
+                text-decoration: none;
+                font-size: 0.875rem;
+              }
+              .report-link a:hover {
+                color: #1e293b;
+                text-decoration: underline;
+              }
             </style>
           </head>
           <body>
@@ -86,7 +104,34 @@ Deno.serve(async (req) => {
               <h1>⚠️ QR Code Expired</h1>
               <p>This QR code is no longer active. The owner needs to renew their subscription to reactivate it.</p>
               <span class="status">Status: ${qrCode.status}</span>
+              <div class="report-link">
+                <a href="#" onclick="reportQR(); return false;">🚩 Report this QR code</a>
+              </div>
             </div>
+            <script>
+              function reportQR() {
+                if (confirm('Are you sure you want to report this QR code? This will flag it for review.')) {
+                  fetch('${supabaseUrl}/functions/v1/qr-report', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      shortCode: '${shortCode}',
+                      reason: 'User reported'
+                    })
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    alert(data.message || 'Thank you for your report.');
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit report. Please try again.');
+                  });
+                }
+              }
+            </script>
           </body>
         </html>
       `;
@@ -113,7 +158,7 @@ Deno.serve(async (req) => {
         city: cfCity,
         device_type: deviceType,
       })
-      .then(({ error }) => {
+      .then(({ error }: any) => {
         if (error) console.error('Analytics insert error:', error);
       });
 

@@ -13,6 +13,8 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
+import Moderation from "./pages/Moderation";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create" element={<CreateQR />} />
+          <Route path="/analytics/:id" element={<Analytics />} />
+          <Route path="/moderation" element={<Moderation />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />

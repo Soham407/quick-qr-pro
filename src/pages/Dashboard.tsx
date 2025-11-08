@@ -2,11 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, Plus, QrCode, Trash2, LogOut } from "lucide-react";
+import { Sparkles, Plus, QrCode, Trash2, LogOut, BarChart3, Edit, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import type { User } from "@supabase/supabase-js";
 
 interface QRCodeData {
   id: string;
@@ -20,9 +19,11 @@ interface QRCodeData {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [qrCodes, setQrCodes] = useState<QRCodeData[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editUrl, setEditUrl] = useState<string>("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,7 +41,7 @@ const Dashboard = () => {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (!session) {
         navigate("/signin");
       } else {
@@ -75,6 +76,31 @@ const Dashboard = () => {
       toast.error("Failed to delete QR code");
     } else {
       toast.success("QR code deleted");
+      fetchQRCodes();
+    }
+  };
+
+  const handleEditUrl = async (id: string) => {
+    if (!editUrl.trim()) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("qr_codes")
+      .update({ 
+        destination_url: editUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to update URL");
+      console.error(error);
+    } else {
+      toast.success("Destination URL updated successfully");
+      setEditingId(null);
+      setEditUrl("");
       fetchQRCodes();
     }
   };
@@ -132,10 +158,21 @@ const Dashboard = () => {
                 Create and manage your QR codes
               </p>
             </div>
-            <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
-              <Plus className="w-5 h-5 mr-2" />
-              Create New QR
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                onClick={() => navigate('/moderation')}
+                title="Moderation Dashboard"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Moderation
+              </Button>
+              <Button variant="hero" size="lg" onClick={() => navigate('/create')}>
+                <Plus className="w-5 h-5 mr-2" />
+                Create New QR
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -224,14 +261,71 @@ const Dashboard = () => {
                         </div>
                       )}
                       <p className="text-xs text-muted-foreground">Destination:</p>
-                      <p className="text-sm truncate">
-                        {qr.destination_url}
-                      </p>
+                      {editingId === qr.id ? (
+                        <div className="space-y-2">
+                          <input
+                            type="url"
+                            value={editUrl}
+                            onChange={(e) => setEditUrl(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder="Enter new destination URL"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleEditUrl(qr.id)}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditUrl("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm truncate">
+                          {qr.destination_url}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="capitalize">{qr.status}</span>
                       <span>{new Date(qr.created_at).toLocaleDateString()}</span>
                     </div>
+                    
+                    {/* Action Buttons */}
+                    {qr.type === 'dynamic' && editingId !== qr.id && (
+                      <div className="flex gap-2 pt-2 border-t border-border">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate(`/analytics/${qr.id}`)}
+                        >
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Analytics
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setEditingId(qr.id);
+                            setEditUrl(qr.destination_url);
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit URL
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               ))}
