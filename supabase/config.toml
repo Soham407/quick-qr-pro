@@ -1,1 +1,7 @@
 project_id = "dikifwudqhstaadzpgss"
+
+[functions.qr-redirect]
+verify_jwt = false
+
+[functions.qr-expiry-cron]
+verify_jwt = false

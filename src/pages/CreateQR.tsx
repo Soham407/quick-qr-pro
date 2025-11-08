@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import QRCodeStyling from "qr-code-styling";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { generateUniqueShortCode } from "@/lib/qr-utils";
 
 const CreateQR = () => {
   const navigate = useNavigate();
@@ -149,6 +150,12 @@ const CreateQR = () => {
         logoUrl = publicUrl;
       }
 
+      // Generate short code for dynamic QR codes
+      let shortUrl = null;
+      if (qrType === 'dynamic') {
+        shortUrl = await generateUniqueShortCode(supabase);
+      }
+
       // Calculate expiry for dynamic codes (30 days trial)
       let expiresAt = null;
       if (qrType === 'dynamic') {
@@ -164,6 +171,7 @@ const CreateQR = () => {
           user_id: user.id,
           name: qrName,
           type: qrType,
+          short_url: shortUrl,
           destination_url: destinationUrl,
           status: 'active',
           expires_at: expiresAt,
@@ -291,6 +299,14 @@ const CreateQR = () => {
                     value={destinationUrl}
                     onChange={(e) => setDestinationUrl(e.target.value)}
                   />
+                  {qrType === "dynamic" && (
+                    <div className="text-xs text-muted-foreground bg-primary/5 p-3 rounded-md border border-primary/10">
+                      <p className="font-medium text-foreground mb-1">📍 Dynamic QR Code</p>
+                      <p>
+                        Your QR code will use a redirect URL. You can change the destination URL anytime without reprinting the QR code!
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Design Customization */}

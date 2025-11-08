@@ -12,6 +12,7 @@ interface QRCodeData {
   id: string;
   name: string;
   type: string;
+  short_url: string | null;
   destination_url: string;
   status: string;
   created_at: string;
@@ -213,8 +214,17 @@ const Dashboard = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                    <div className="text-sm">
-                      <p className="text-muted-foreground truncate">
+                    <div className="text-sm space-y-1">
+                      {qr.type === 'dynamic' && qr.short_url && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Redirect URL:</p>
+                          <p className="text-xs font-mono bg-muted px-2 py-1 rounded truncate">
+                            {`https://dikifwudqhstaadzpgss.supabase.co/functions/v1/qr-redirect/${qr.short_url}`}
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">Destination:</p>
+                      <p className="text-sm truncate">
                         {qr.destination_url}
                       </p>
                     </div>
