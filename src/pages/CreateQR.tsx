@@ -132,6 +132,35 @@ const CreateQR = () => {
         return;
       }
 
+      // Check QR code limits
+      const { data: existingQRs, error: countError } = await supabase
+        .from('qr_codes')
+        .select('id, type')
+        .eq('user_id', user.id);
+
+      if (countError) {
+        console.error("Error checking QR limits:", countError);
+        toast.error("Failed to check QR code limits");
+        setSaving(false);
+        return;
+      }
+
+      const staticCount = existingQRs?.filter(qr => qr.type === 'static').length || 0;
+      const dynamicCount = existingQRs?.filter(qr => qr.type === 'dynamic').length || 0;
+
+      // Enforce limits
+      if (qrType === 'static' && staticCount >= 20) {
+        toast.error("You've reached the limit of 20 free static QR codes. Delete some to create more.");
+        setSaving(false);
+        return;
+      }
+
+      if (qrType === 'dynamic' && dynamicCount >= 1) {
+        toast.error("Free users can only create 1 dynamic QR code. Upgrade to create more!");
+        setSaving(false);
+        return;
+      }
+
       // Upload logo if present
       let logoUrl = "";
       if (logoFile) {

@@ -70,6 +70,7 @@ interface QRCodeData {
   status: string;
   created_at: string;
   updated_at: string;
+  expires_at: string | null;
   qr_design: {
     dot_color: string | null;
     background_color: string | null;
@@ -136,6 +137,81 @@ const Dashboard = () => {
         fetchQRCodes();
         setSelectedQr(null); // Close sheet if open
       }
+    }
+  };
+
+  const handleDuplicate = async (qr: QRCodeData) => {
+    if (!user) return;
+
+    try {
+      // Check limits before duplicating
+      const staticCount = qrCodes.filter(q => q.type === 'static').length;
+      const dynamicCount = qrCodes.filter(q => q.type === 'dynamic').length;
+
+      if (qr.type === 'static' && staticCount >= 20) {
+        toast.error("You've reached the limit of 20 free static QR codes");
+        return;
+      }
+
+      if (qr.type === 'dynamic' && dynamicCount >= 1) {
+        toast.error("Free users can only have 1 dynamic QR code");
+        return;
+      }
+
+      // Generate new short code for dynamic QR
+      let newShortUrl = null;
+      if (qr.type === 'dynamic') {
+        const { generateUniqueShortCode } = await import('@/lib/qr-utils');
+        newShortUrl = await generateUniqueShortCode(supabase);
+      }
+
+      // Calculate new expiry for dynamic codes
+      let newExpiresAt = null;
+      if (qr.type === 'dynamic') {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
+        newExpiresAt = expiry.toISOString();
+      }
+
+      // Duplicate QR code
+      const { data: newQR, error: qrError } = await supabase
+        .from('qr_codes')
+        .insert({
+          user_id: user.id,
+          name: `${qr.name} (Copy)`,
+          type: qr.type,
+          short_url: newShortUrl,
+          destination_url: qr.destination_url,
+          status: 'active',
+          expires_at: newExpiresAt,
+        })
+        .select()
+        .single();
+
+      if (qrError) {
+        toast.error("Failed to duplicate QR code");
+        return;
+      }
+
+      // Duplicate design settings if they exist
+      if (qr.qr_design) {
+        await supabase
+          .from('qr_design')
+          .insert({
+            qr_code_id: newQR.id,
+            frame_text: qr.qr_design.frame_text,
+            logo_url: qr.qr_design.logo_url,
+            dot_color: qr.qr_design.dot_color,
+            background_color: qr.qr_design.background_color,
+            corner_color: qr.qr_design.corner_color,
+          });
+      }
+
+      toast.success("QR code duplicated successfully!");
+      fetchQRCodes();
+    } catch (error) {
+      console.error("Duplicate error:", error);
+      toast.error("Failed to duplicate QR code");
     }
   };
 
@@ -273,6 +349,9 @@ const Dashboard = () => {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuItem onClick={() => handleDuplicate(qr)}>
+                    <QrCode className="mr-2 w-4 h-4" /> Duplicate
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(qr.id)}>
                     <Trash2 className="mr-2" /> Delete
                   </DropdownMenuItem>
@@ -405,6 +484,9 @@ const Dashboard = () => {
                         <DropdownMenuSeparator />
                       </>
                     )}
+                    <DropdownMenuItem onClick={() => handleDuplicate(qr)}>
+                      <QrCode className="mr-2 w-4 h-4" /> Duplicate
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(qr.id)}>
                       <Trash2 className="mr-2" /> Delete
                     </DropdownMenuItem>
@@ -515,17 +597,76 @@ const Dashboard = () => {
               <Button variant="outline"><ArrowUpDown className="w-4 h-4 mr-2" /> Sort by: Most recent</Button>
             </div>
           </div>
-          {/* Trial Alert Banner */}
-          <Alert className="border-amber-500/50 text-amber-700 [&>svg]:text-amber-600">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle className="font-semibold">You are using a free trial</AlertTitle>
-            <AlertDescription>
-              Your dynamic QR codes will expire in 30 days.
-              <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
-                Upgrade
-              </Button>
-            </AlertDescription>
-          </Alert>
+          {/* Dynamic Trial/Expiry Warnings */}
+          {(() => {
+            // Check for expiring or expired QR codes
+            const expiringQRs = qrCodes.filter(qr => {
+              if (qr.type !== 'dynamic' || !qr.expires_at) return false;
+              const expiryDate = new Date(qr.expires_at);
+              const now = new Date();
+              const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
+            });
+
+            const gracePeriodQRs = qrCodes.filter(qr => {
+              if (qr.type !== 'dynamic' || !qr.expires_at) return false;
+              const expiryDate = new Date(qr.expires_at);
+              const now = new Date();
+              const daysAfterExpiry = Math.ceil((now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24));
+              return daysAfterExpiry > 0 && daysAfterExpiry <= 3 && qr.status === 'active';
+            });
+
+            if (gracePeriodQRs.length > 0) {
+              const qr = gracePeriodQRs[0];
+              const daysRemaining = 3 - Math.ceil((new Date().getTime() - new Date(qr.expires_at!).getTime()) / (1000 * 60 * 60 * 24));
+              return (
+                <Alert className="border-destructive/50 text-destructive [&>svg]:text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle className="font-semibold">⚠️ Grace Period - {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left!</AlertTitle>
+                  <AlertDescription>
+                    Your dynamic QR code "{qr.name}" has expired and will be deactivated in {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}.
+                    <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
+                      Activate Now
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+
+            if (expiringQRs.length > 0) {
+              const qr = expiringQRs[0];
+              const daysLeft = Math.ceil((new Date(qr.expires_at!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+              return (
+                <Alert className="border-amber-500/50 text-amber-700 [&>svg]:text-amber-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle className="font-semibold">Trial Expiring Soon</AlertTitle>
+                  <AlertDescription>
+                    Your dynamic QR code "{qr.name}" will expire in {daysLeft} day{daysLeft !== 1 ? 's' : ''}.
+                    <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
+                      Upgrade
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+
+            if (dynamicCount === 1 && qrCodes.some(qr => qr.type === 'dynamic')) {
+              return (
+                <Alert className="border-blue-500/50 text-blue-700 [&>svg]:text-blue-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle className="font-semibold">Free Trial Active</AlertTitle>
+                  <AlertDescription>
+                    You're using your free 30-day dynamic QR code trial. Upgrade for unlimited dynamic codes.
+                    <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
+                      View Plans
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+
+            return null;
+          })()}
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative w-full max-w-sm">
