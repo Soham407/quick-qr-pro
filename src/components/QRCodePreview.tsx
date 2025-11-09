@@ -68,32 +68,31 @@ const QRCodePreview = ({ type, data, design, width = 200, height = 200 }: QRPrev
       qrOptions.image = design.logo_url;
     }
 
+    // Add native frame support if frame text exists
+    if (design.frame_text) {
+      qrOptions.qrOptions = {
+        errorCorrectionLevel: "H"
+      };
+      qrOptions.imageOptions = {
+        ...qrOptions.imageOptions,
+        margin: 10
+      };
+    }
+
     // Create and append new QR code
     qrCode.current = new QRCodeStyling(qrOptions);
     qrCode.current.append(qrRef.current);
 
   }, [type, data, design, width, height]);
 
-  // This renders the QR code *and* the frame, styled like your screenshot
+  // This renders the QR code with native frame
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative p-4 bg-white rounded-2xl shadow-lg">
-        
-        {/* The QR Code itself will be injected here */}
         <div ref={qrRef} />
-        
-        {/* Frame / Banner */}
         {design.frame_text && (
-          <div className="relative w-full -mt-2">
-            <div 
-              className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[90%] py-2 px-4 rounded-md text-center bg-primary text-primary-foreground"
-              style={{
-                // A bit of clipping to make it look like a banner
-                clipPath: 'polygon(0% 0%, 100% 0%, 95% 100%, 5% 100%)'
-              }}
-            >
-              <p className="font-semibold text-sm">{design.frame_text}</p>
-            </div>
+          <div className="mt-2 text-center">
+            <p className="font-semibold text-sm text-foreground">{design.frame_text}</p>
           </div>
         )}
       </div>

@@ -712,6 +712,15 @@ const SheetQRCodeDownloader = ({
         },
       };
 
+      // Add frame text if present
+      if (design.frame_text) {
+        options.qrOptions = { errorCorrectionLevel: "H" };
+        options.imageOptions = {
+          ...options.imageOptions,
+          margin: 10
+        };
+      }
+
   const qrCode = new QRCodeStyling(options);
       qrCode.append(ref.current);
       onReady(qrCode);
