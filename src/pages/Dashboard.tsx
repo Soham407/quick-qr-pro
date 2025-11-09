@@ -225,7 +225,7 @@ const Dashboard = () => {
             {/* Grid preview - uses SheetTrigger to open sheet */}
             {qr.qr_design && (
               <div
-                className="flex justify-center py-4 cursor-pointer"
+                className="flex justify-center items-center py-4 cursor-pointer"
                 onClick={() => setSelectedQr(qr)}
                 role="button"
                 tabIndex={0}
@@ -237,8 +237,8 @@ const Dashboard = () => {
                   type={qr.type}
                   data={qr.type === "dynamic" ? qr.short_url! : qr.destination_url}
                   design={qr.qr_design}
-                  width={180}
-                  height={180}
+                  width={200}
+                  height={200}
                 />
               </div>
             )}
@@ -346,13 +346,13 @@ const Dashboard = () => {
                   }}
                 >
                   {qr.qr_design && (
-                    <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center bg-white">
                       <QRCodePreview
                         type={qr.type}
                         data={qr.type === "dynamic" ? qr.short_url! : qr.destination_url}
                         design={qr.qr_design}
-                        width={40}
-                        height={40}
+                        width={48}
+                        height={48}
                       />
                     </div>
                   )}

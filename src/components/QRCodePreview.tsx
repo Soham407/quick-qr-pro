@@ -24,6 +24,9 @@ type QRPreviewProps = {
 const QRCodePreview = ({ type, data, design, width = 200, height = 200 }: QRPreviewProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
+  
+  // Determine if this is a small preview (like in list view)
+  const isSmall = width <= 50;
 
   useEffect(() => {
     if (!qrRef.current) return;
@@ -83,13 +86,23 @@ const QRCodePreview = ({ type, data, design, width = 200, height = 200 }: QRPrev
     qrCode.current = new QRCodeStyling(qrOptions);
     qrCode.current.append(qrRef.current);
 
-  }, [type, data, design, width, height]);
+  }, [type, data, design, width, height, isSmall]);
 
   // This renders the QR code with native frame
+  // For small previews (list view), use minimal styling
+  if (isSmall) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div ref={qrRef} className="flex items-center justify-center" />
+      </div>
+    );
+  }
+
+  // For larger previews (grid/sheet), use full styling
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center w-full">
       <div className="relative p-4 bg-white rounded-2xl shadow-lg">
-        <div ref={qrRef} />
+        <div ref={qrRef} className="flex items-center justify-center" />
         {design.frame_text && (
           <div className="mt-2 text-center">
             <p className="font-semibold text-sm text-foreground">{design.frame_text}</p>
