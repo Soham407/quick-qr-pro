@@ -21,8 +21,6 @@ import {
   Link2,
   AlertCircle,
   X,
-  ChevronLeft,
-  ChevronRight,
   Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,8 +45,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -85,12 +81,8 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [qrCodes, setQrCodes] = useState<QRCodeData[]>([]);
-  
-  // State for inline editing in the grid view
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editUrl, setEditUrl] = useState<string>("");
 
-  // --- NEW STATE FOR UI CONTROLS ---
+  // --- UI CONTROLS STATE ---
   const [filter, setFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
@@ -215,27 +207,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleEditUrl = async (id: string) => {
-    // ... (same as your existing code)
-    if (!editUrl.trim()) { toast.error("Please enter a valid URL"); return; }
-    const { error } = await supabase
-      .from("qr_codes")
-      .update({ destination_url: editUrl, updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) { toast.error("Failed to update URL"); } else {
-      toast.success("Destination URL updated successfully");
-      setEditingId(null);
-      setEditUrl("");
-      fetchQRCodes();
-      // Update selectedQr data if it's the one being edited
-      if(selectedQr && selectedQr.id === id) {
-        setSelectedQr(prev => prev ? ({ ...prev, destination_url: editUrl }) : null);
-      }
-    }
-  };
-
   const handleLogout = async () => {
-    // ... (same as your existing code)
     await supabase.auth.signOut();
     navigate("/signin");
   };
@@ -333,18 +305,13 @@ const Dashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate(`/edit/${qr.id}`)}>
+                    <Edit className="mr-2 w-4 h-4" /> Edit
+                  </DropdownMenuItem>
                   {qr.type === "dynamic" && (
                     <>
                       <DropdownMenuItem onClick={() => navigate(`/analytics/${qr.id}`)}>
                         <BarChart3 className="mr-2" /> Analytics
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditingId(qr.id);
-                          setEditUrl(qr.destination_url);
-                        }}
-                      >
-                        <Edit className="mr-2" /> Edit URL
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
@@ -358,28 +325,10 @@ const Dashboard = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Inline editing for grid */}
+            {/* Destination URL Display */}
             <div className="text-sm space-y-1">
               <p className="text-xs text-muted-foreground">Destination:</p>
-              {editingId === qr.id ? (
-                <div className="space-y-2">
-                  <input
-                    type="url"
-                    value={editUrl}
-                    onChange={(e) => setEditUrl(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Enter new destination URL"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleEditUrl(qr.id)}>Save</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditUrl(""); }}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm truncate">{qr.destination_url}</p>
-              )}
+              <p className="text-sm truncate">{qr.destination_url}</p>
             </div>
             {/* Status and Date */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -472,15 +421,14 @@ const Dashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/edit/${qr.id}`)}>
+                      <Edit className="mr-2 w-4 h-4" /> Edit
+                    </DropdownMenuItem>
                     {qr.type === "dynamic" && (
                       <>
                         <DropdownMenuItem onClick={() => navigate(`/analytics/${qr.id}`)}>
                           <BarChart3 className="mr-2" /> Analytics
                         </DropdownMenuItem>
-                        {/* We use the Sheet's edit button now, but could keep this
-                        <DropdownMenuItem onClick={() => { setEditingId(qr.id); setEditUrl(qr.destination_url); }}>
-                          <Edit className="mr-2" /> Edit URL
-                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                       </>
                     )}
@@ -680,15 +628,6 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Switch id="visits-toggle" />
-                <Label htmlFor="visits-toggle" className="text-sm">Visits</Label>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>1 of 1</span>
-                <Button variant="outline" size="icon" className="w-8 h-8"><ChevronLeft className="w-4 h-4" /></Button>
-                <Button variant="outline" size="icon" className="w-8 h-8"><ChevronRight className="w-4 h-4" /></Button>
-              </div>
-              <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" onClick={() => setViewMode("list")} className={cn("w-9 h-9", viewMode === "list" && "bg-muted text-primary")}>
                   <List className="w-4 h-4" />
                 </Button>
@@ -791,7 +730,7 @@ const Dashboard = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => navigate('/create')} // This is just a placeholder, ideally it would go to an edit page
+                    onClick={() => navigate(`/edit/${selectedQr.id}`)}
                     className="flex-1"
                   >
                     <Edit className="w-4 h-4 mr-2" />

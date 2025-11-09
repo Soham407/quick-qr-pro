@@ -9,6 +9,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import CreateQR from "./pages/CreateQR";
+import EditQR from "./pages/EditQR";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create" element={<CreateQR />} />
+          <Route path="/edit/:id" element={<EditQR />} />
           <Route path="/analytics/:id" element={<Analytics />} />
           <Route path="/moderation" element={<Moderation />} />
           <Route path="/privacy" element={<Privacy />} />
