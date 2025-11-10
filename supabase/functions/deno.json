@@ -5,7 +5,6 @@
     "allowJs": true
   },
   "imports": {
-    "supabase": "https://esm.sh/@supabase/supabase-js@2.80.0",
-    "razorpay": "npm:razorpay@2.9.2"
+    "supabase": "https://esm.sh/@supabase/supabase-js@2.80.0"
   }
 }

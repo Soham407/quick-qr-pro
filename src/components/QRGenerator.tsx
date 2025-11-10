@@ -94,7 +94,7 @@ const QRGenerator = ({ onGenerate }: QRGeneratorProps) => {
                 {/* The blurred QR code */}
                 <div 
                   ref={qrRef} 
-                  className="rounded-xl overflow-hidden border-4 border-primary/20 blur-sm"
+                  className="rounded-xl overflow-hidden border-4 border-primary/20 blur-sm w-[280px] h-[280px]"
                 />
                 
                 {/* Overlay with lock and CTA */}

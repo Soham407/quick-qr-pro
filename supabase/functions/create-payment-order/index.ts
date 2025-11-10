@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Razorpay from "https://esm.sh/razorpay@2.9.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,24 +86,35 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Razorpay
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
+    // Create Razorpay order using direct API call
+    const basicAuth = btoa(`${keyId}:${keySecret}`);
+    
+    const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: 1000, // $10.00 in cents
+        currency: "USD",
+        receipt: qr_code_id,
+        notes: {
+          user_id: user.id,
+          qr_code_id: qr_code_id,
+        },
+      }),
     });
 
-    // Create Razorpay order
-    // Amount is in smallest currency unit (cents for USD)
-    // $10.00 = 1000 cents
-    const order = await razorpay.orders.create({
-      amount: 1000, // $10.00 in cents
-      currency: "USD",
-      receipt: qr_code_id, // Store QR code ID in receipt for webhook processing
-      notes: {
-        user_id: user.id,
-        qr_code_id: qr_code_id,
-      },
-    });
+    if (!razorpayResponse.ok) {
+      const errorData = await razorpayResponse.text();
+      console.error("Razorpay API error:", errorData);
+      throw new Error(`Razorpay API error: ${razorpayResponse.status}`);
+    }
+
+    const order = await razorpayResponse.json();
+
+    console.log("Payment order created successfully:", order.id);
 
     // Return only the order ID to the client
     return new Response(
