@@ -65,24 +65,26 @@ serve(async (req) => {
       );
     }
 
-    // Security Check: Verify the user owns this QR code
+    // CRITICAL SECURITY CHECK: Verify ownership using user-scoped client
+    // This prevents users from paying to upgrade someone else's QR code
     const { data: qrCode, error: qrError } = await supabaseClient
       .from("qr_codes")
-      .select("id, user_id, status")
+      .select("id, status")
       .eq("id", qr_code_id)
       .single();
 
     if (qrError || !qrCode) {
       return new Response(
-        JSON.stringify({ error: "QR code not found" }),
+        JSON.stringify({ error: "QR code not found or you don't have access" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (qrCode.user_id !== user.id) {
+    // Check if the QR code is already active
+    if (qrCode.status === "active") {
       return new Response(
-        JSON.stringify({ error: "You don't own this QR code" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "This QR code is already active" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

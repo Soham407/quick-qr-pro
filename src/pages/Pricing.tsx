@@ -37,11 +37,13 @@ const Pricing = () => {
     setUser(session?.user || null);
     
     if (session?.user) {
-      // Fetch user's dynamic QR codes
+      // Fetch user's dynamic QR codes that are eligible for upgrade
+      // Exclude already-active codes
       const { data } = await supabase
         .from("qr_codes")
         .select("id, name, type, status")
         .eq("type", "dynamic")
+        .neq("status", "active")
         .order("created_at", { ascending: false });
       
       setDynamicQRCodes((data || []) as QRCodeData[]);
@@ -222,25 +224,32 @@ const Pricing = () => {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2 mt-4">
-                {dynamicQRCodes.map((qr) => (
-                  <Card
-                    key={qr.id}
-                    className="p-4 cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => handleQRCodeSelect(qr)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold">{qr.name}</h4>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          Status: {qr.status.replace("_", " ")}
-                        </p>
+                {dynamicQRCodes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>All your dynamic QR codes are already active!</p>
+                    <p className="text-sm mt-2">Create a new dynamic QR code to upgrade it.</p>
+                  </div>
+                ) : (
+                  dynamicQRCodes.map((qr) => (
+                    <Card
+                      key={qr.id}
+                      className="p-4 cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleQRCodeSelect(qr)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">{qr.name}</h4>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            Status: {qr.status.replace("_", " ")}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          Select
+                        </Button>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Select
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  ))
+                )}
               </div>
             </DialogContent>
           </Dialog>
