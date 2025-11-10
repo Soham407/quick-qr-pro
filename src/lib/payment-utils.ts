@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-export const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_KEY_ID"; // Replace with your actual key
+export const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_KEY_ID"; // TODO: Replace with your actual Razorpay Key ID from dashboard
 
 export interface PaymentOptions {
   qrCodeId: string;

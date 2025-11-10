@@ -20,6 +20,9 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          order_id: string | null
+          payment_gateway: string | null
+          payment_id: string | null
           qr_code_id: string | null
           razorpay_payment_id: string | null
           status: string
@@ -31,6 +34,9 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          order_id?: string | null
+          payment_gateway?: string | null
+          payment_id?: string | null
           qr_code_id?: string | null
           razorpay_payment_id?: string | null
           status?: string
@@ -42,6 +48,9 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          order_id?: string | null
+          payment_gateway?: string | null
+          payment_id?: string | null
           qr_code_id?: string | null
           razorpay_payment_id?: string | null
           status?: string
