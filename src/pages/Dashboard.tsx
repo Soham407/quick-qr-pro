@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { initiatePayment } from "@/lib/payment-utils";
 import {
   Table,
   TableHeader,
@@ -573,8 +574,21 @@ const Dashboard = () => {
                   <AlertTitle className="font-semibold">⚠️ Grace Period - {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left!</AlertTitle>
                   <AlertDescription>
                     Your dynamic QR code "{qr.name}" has expired and will be deactivated in {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}.
-                    <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
-                      Activate Now
+                    <Button 
+                      variant="hero" 
+                      size="sm" 
+                      className="ml-4 h-7" 
+                      onClick={() => {
+                        initiatePayment({
+                          qrCodeId: qr.id,
+                          qrCodeName: qr.name,
+                          onSuccess: () => {
+                            fetchQRCodes(); // Refresh the list
+                          },
+                        });
+                      }}
+                    >
+                      Upgrade to Pro
                     </Button>
                   </AlertDescription>
                 </Alert>
@@ -590,8 +604,21 @@ const Dashboard = () => {
                   <AlertTitle className="font-semibold">Trial Expiring Soon</AlertTitle>
                   <AlertDescription>
                     Your dynamic QR code "{qr.name}" will expire in {daysLeft} day{daysLeft !== 1 ? 's' : ''}.
-                    <Button variant="hero" size="sm" className="ml-4 h-7" onClick={() => navigate("/pricing")}>
-                      Upgrade
+                    <Button 
+                      variant="hero" 
+                      size="sm" 
+                      className="ml-4 h-7" 
+                      onClick={() => {
+                        initiatePayment({
+                          qrCodeId: qr.id,
+                          qrCodeName: qr.name,
+                          onSuccess: () => {
+                            fetchQRCodes(); // Refresh the list
+                          },
+                        });
+                      }}
+                    >
+                      Upgrade to Pro
                     </Button>
                   </AlertDescription>
                 </Alert>
