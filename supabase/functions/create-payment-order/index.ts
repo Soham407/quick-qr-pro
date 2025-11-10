@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Razorpay from "npm:razorpay@2.9.2";
+import Razorpay from "https://esm.sh/razorpay@2.9.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,7 +121,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error creating payment order:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
