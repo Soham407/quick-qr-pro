@@ -4,37 +4,12 @@ import FeatureCard from "@/components/FeatureCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
+import Header from "@/components/Header";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Quick QR
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/features">
-              <Button variant="ghost" size="sm">Features</Button>
-            </Link>
-            <Link to="/pricing">
-              <Button variant="ghost" size="sm">Pricing</Button>
-            </Link>
-            <Link to="/signin">
-              <Button variant="outline" size="sm">Sign In</Button>
-            </Link>
-            <Link to="/signin">
-              <Button variant="hero" size="sm">Get Started</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 lg:py-28">
