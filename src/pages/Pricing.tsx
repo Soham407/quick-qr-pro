@@ -34,13 +34,13 @@ const Pricing = () => {
       return;
     }
 
-    // Fetch user's dynamic QR codes that are in trial status
+    // Fetch user's dynamic QR codes that are eligible for upgrade
     const { data: codes, error } = await supabase
       .from("qr_codes")
       .select("*")
       .eq("user_id", session.user.id)
       .eq("type", "dynamic")
-      .eq("status", "trial")
+      .in("status", ["active", "trial_expired", "paid_expired"])
       .order("created_at", { ascending: false });
 
     if (error) {
