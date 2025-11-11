@@ -22,7 +22,13 @@ serve(async (req) => {
       throw new Error("Razorpay credentials not configured");
     }
 
-    // Get authorization token
+    // Create Supabase client with service role for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Get authorization token and extract user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -31,7 +37,7 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
+    // Create user-scoped client for RLS-protected queries
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -39,18 +45,22 @@ serve(async (req) => {
         global: {
           headers: { Authorization: authHeader },
         },
+        auth: {
+          persistSession: false, // Critical for edge functions
+        },
       }
     );
 
-    // Get the authenticated user
+    // Verify the JWT and get user
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser();
 
     if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized", details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
