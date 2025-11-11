@@ -82,7 +82,7 @@ serve(async (req) => {
     // This prevents users from paying to upgrade someone else's QR code
     const { data: qrCode, error: qrError } = await supabaseClient
       .from("qr_codes")
-      .select("id, status")
+      .select("id, status, expires_at")
       .eq("id", qr_code_id)
       .single();
 
@@ -93,12 +93,20 @@ serve(async (req) => {
       );
     }
 
-    // Check if the QR code is already active
-    if (qrCode.status === "active") {
-      return new Response(
-        JSON.stringify({ error: "This QR code is already active" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Check if the QR code is already a PAID active code
+    // Trial codes expire in 30 days, paid codes expire in 1 year
+    // So if expires_at is more than 60 days away, it's already paid
+    if (qrCode.status === "active" && qrCode.expires_at) {
+      const expiryDate = new Date(qrCode.expires_at);
+      const now = new Date();
+      const daysUntilExpiry = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysUntilExpiry > 60) {
+        return new Response(
+          JSON.stringify({ error: "This QR code is already upgraded to Pro" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Create Razorpay order using direct API call
