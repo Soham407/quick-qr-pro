@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { initiatePayment } from "@/lib/payment-utils";
@@ -126,8 +127,8 @@ const Pricing = () => {
                     <span>Download in multiple formats</span>
                   </li>
                 </ul>
-                <Link to="/" className="block">
-                  <Button variant="outline" size="lg" className="w-full">
+                <Link to="/signin" className="block">
+                  <Button variant="default" size="lg" className="w-full">
                     Get Started Free
                   </Button>
                 </Link>
@@ -184,6 +185,8 @@ const Pricing = () => {
         </div>
       </section>
 
+      <Footer />
+
       {/* QR Code Selection Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
@@ -193,22 +196,24 @@ const Pricing = () => {
               Choose which dynamic QR code you'd like to upgrade to Pro
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto pr-2">
             {qrCodes.map((qr) => (
-              <Card key={qr.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{qr.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {qr.destination_url.length > 40 
-                        ? qr.destination_url.substring(0, 40) + "..." 
-                        : qr.destination_url}
+              <Card key={qr.id} className="p-4 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{qr.name}</h4>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {qr.destination_url}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Status: <span className="capitalize">{qr.status.replace('_', ' ')}</span>
                     </p>
                   </div>
                   <Button 
                     variant="hero" 
                     size="sm"
                     onClick={() => handlePayment(qr)}
+                    className="shrink-0"
                   >
                     Upgrade
                   </Button>
