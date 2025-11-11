@@ -51,16 +51,19 @@ serve(async (req) => {
       }
     );
 
-    // Verify the JWT and get user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
+    // Extract user id from the verified JWT
+    const token = authHeader.replace("Bearer", "").trim();
+    let userId: string | null = null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      userId = payload?.sub ?? null;
+    } catch (e) {
+      console.error("Failed to parse JWT payload", e);
+    }
 
-    if (userError || !user) {
-      console.error("Auth error:", userError);
+    if (!userId) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized", details: userError?.message }),
+        JSON.stringify({ error: "Unauthorized", details: "Auth session missing!" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -108,11 +111,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: 1000, // $10.00 in cents
+        amount: 1000, // 1000 = 10.00 in minor units
         currency: "USD",
         receipt: qr_code_id,
         notes: {
-          user_id: user.id,
+          user_id: userId,
           qr_code_id: qr_code_id,
         },
       }),
