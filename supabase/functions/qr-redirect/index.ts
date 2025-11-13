@@ -136,17 +136,41 @@ Deno.serve(async (req: Request) => {
     const userAgent = req.headers.get('user-agent') || '';
     const deviceType = getDeviceType(userAgent);
     
-    // Get geolocation from CF headers (Cloudflare provides this)
-    const cfCountry = req.headers.get('cf-ipcountry') || 'Unknown';
-    const cfCity = req.headers.get('cf-ipcity') || 'Unknown';
+    // Get client IP address
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+                     || req.headers.get('x-real-ip') 
+                     || 'Unknown';
+    
+    console.log(`Client IP: ${clientIp}`);
+    
+    // Get geolocation from IP
+    let country = 'Unknown';
+    let city = 'Unknown';
+    
+    if (clientIp !== 'Unknown') {
+      try {
+        // Use ip-api.com for free geolocation (no API key needed)
+        const geoResponse = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,country,city`);
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          if (geoData.status === 'success') {
+            country = geoData.country || 'Unknown';
+            city = geoData.city || 'Unknown';
+            console.log(`Geolocation: ${city}, ${country}`);
+          }
+        }
+      } catch (geoError) {
+        console.error('Geolocation lookup error:', geoError);
+      }
+    }
 
     // Insert analytics (fire and forget)
     void supabase
       .from('qr_analytics')
       .insert({
         qr_code_id: qrCode.id,
-        country: cfCountry,
-        city: cfCity,
+        country: country,
+        city: city,
         device_type: deviceType,
       })
       .then((res: unknown) => {
