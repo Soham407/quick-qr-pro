@@ -264,6 +264,22 @@ const Dashboard = () => {
   // Stats calculation
   const staticCount = qrCodes.filter((qr) => qr.type === "static").length;
   const dynamicCount = qrCodes.filter((qr) => qr.type === "dynamic").length;
+  
+  // Calculate days remaining for trial codes
+  const getTrialDaysRemaining = (expiresAt: string | null): number | null => {
+    if (!expiresAt) return null;
+    const expiry = new Date(expiresAt);
+    const now = new Date();
+    const daysRemaining = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return daysRemaining;
+  };
+  
+  // Check if any trial codes are in grace period (< 3 days)
+  const trialCodesInGracePeriod = qrCodes.filter((qr) => {
+    if (qr.type !== "dynamic" || qr.status !== "active") return false;
+    const daysRemaining = getTrialDaysRemaining(qr.expires_at);
+    return daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0;
+  });
 
   // --- RENDER FUNCTIONS FOR GRID/LIST ---
   const renderGrid = () => (
@@ -294,9 +310,24 @@ const Dashboard = () => {
             
             {/* ... (rest of your existing grid card layout) ... */}
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold">{qr.name}</h3>
                 <p className="text-sm text-muted-foreground capitalize">{qr.type}</p>
+                {qr.type === "dynamic" && qr.status === "active" && qr.expires_at && (() => {
+                  const daysRemaining = getTrialDaysRemaining(qr.expires_at);
+                  if (daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 30) {
+                    return (
+                      <p className={cn(
+                        "text-xs font-medium mt-1",
+                        daysRemaining <= 3 ? "text-orange-500" : "text-blue-500"
+                      )}>
+                        {daysRemaining <= 3 ? "⚠️ " : ""}
+                        {daysRemaining} days remaining
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               {/* Actions Dropdown */}
               <DropdownMenu>
@@ -309,13 +340,20 @@ const Dashboard = () => {
                   <DropdownMenuItem onClick={() => navigate(`/edit/${qr.id}`)}>
                     <Edit className="mr-2 w-4 h-4" /> Edit
                   </DropdownMenuItem>
-                  {qr.type === "dynamic" && (
+                   {qr.type === "dynamic" && (
                     <>
                       <DropdownMenuItem onClick={() => navigate(`/analytics/${qr.id}`)}>
                         <BarChart3 className="mr-2" /> Analytics
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
+                  )}
+                  {(qr.status === "trial_expired" || qr.status === "paid_expired") && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/pricing">
+                        <Sparkles className="mr-2 w-4 h-4 text-accent" /> Upgrade to Pro
+                      </Link>
+                    </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => handleDuplicate(qr)}>
                     <QrCode className="mr-2 w-4 h-4" /> Duplicate
@@ -364,26 +402,22 @@ const Dashboard = () => {
             <TableRow key={qr.id}>
               <TableCell><Checkbox /></TableCell>
               <TableCell>
-                {/* --- OPEN SHEET ON CLICK --- */}
-                <div
-                  className="flex items-center gap-3 cursor-pointer"
-                  onClick={() => setSelectedQr(qr)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") setSelectedQr(qr);
-                  }}
-                >
-                  <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center bg-muted">
-                    <QrCode className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium hover:text-primary">{qr.name}</span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Link2 className="w-3 h-3" />
-                      {qr.destination_url.length > 30 ? qr.destination_url.substring(0, 30) + "..." : qr.destination_url}
-                    </span>
-                  </div>
+                <div>
+                  {qr.name}
+                  {qr.type === "dynamic" && qr.status === "active" && qr.expires_at && (() => {
+                    const daysRemaining = getTrialDaysRemaining(qr.expires_at);
+                    if (daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 30) {
+                      return (
+                        <p className={cn(
+                          "text-xs font-medium mt-0.5",
+                          daysRemaining <= 3 ? "text-orange-500" : "text-blue-500"
+                        )}>
+                          {daysRemaining <= 3 ? "⚠️ " : ""}Expires in {daysRemaining} days
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </TableCell>
               {/* ... (rest of the table cells are the same) ... */}
@@ -397,9 +431,22 @@ const Dashboard = () => {
                   : "-"}
               </TableCell>
               <TableCell>
-                <Badge variant={getStatusBadgeVariant(qr.status)} className="capitalize">
-                  {qr.status.replace("_", " ")}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={getStatusBadgeVariant(qr.status)} className="capitalize">
+                    {qr.status.replace("_", " ")}
+                  </Badge>
+                  {qr.type === "dynamic" && qr.status === "active" && qr.expires_at && (() => {
+                    const daysRemaining = getTrialDaysRemaining(qr.expires_at);
+                    if (daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3) {
+                      return (
+                        <Badge variant="destructive">
+                          Grace Period
+                        </Badge>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
               </TableCell>
               <TableCell>
                 <Button variant="ghost" size="sm" onClick={() => navigate(`/analytics/${qr.id}`)} disabled={qr.type !== "dynamic"}>
@@ -424,6 +471,13 @@ const Dashboard = () => {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>
+                    )}
+                    {(qr.status === "trial_expired" || qr.status === "paid_expired") && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/pricing">
+                          <Sparkles className="mr-2 w-4 h-4 text-accent" /> Upgrade to Pro
+                        </Link>
+                      </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={() => handleDuplicate(qr)}>
                       <QrCode className="mr-2 w-4 h-4" /> Duplicate
@@ -493,37 +547,67 @@ const Dashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total QR Codes</p>
-                  <p className="text-3xl font-bold">{qrCodes.length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Static QR Codes</p>
+                  <p className="text-3xl font-bold">{staticCount}/20</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <QrCode className="w-6 h-6 text-primary" />
                 </div>
               </div>
-            </Card>
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Static Codes</p>
-                  <p className="text-3xl font-bold">{staticCount} / 20</p>
-                </div>
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <QrCode className="w-6 h-6 text-accent" />
-                </div>
+              <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all" 
+                  style={{ width: `${(staticCount / 20) * 100}%` }}
+                />
               </div>
             </Card>
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Dynamic Codes</p>
-                  <p className="text-3xl font-bold">{dynamicCount} / 1</p>
+                  <p className="text-sm text-muted-foreground mb-1">Trial Dynamic</p>
+                  <p className="text-3xl font-bold">{dynamicCount}/1</p>
                 </div>
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <QrCode className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-accent" />
+                </div>
+              </div>
+              <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-accent transition-all" 
+                  style={{ width: `${(dynamicCount / 1) * 100}%` }}
+                />
+              </div>
+            </Card>
+            <Card className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Total QR Codes</p>
+                  <p className="text-3xl font-bold">{qrCodes.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-primary" />
                 </div>
               </div>
             </Card>
           </div>
+
+          {/* Grace Period Warning */}
+          {trialCodesInGracePeriod.length > 0 && (
+            <Alert className="border-orange-500 bg-orange-500/10">
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+              <AlertTitle className="text-orange-500">Trial Expiring Soon!</AlertTitle>
+              <AlertDescription>
+                {trialCodesInGracePeriod.length === 1 ? (
+                  <>Your trial QR code "{trialCodesInGracePeriod[0].name}" expires in {getTrialDaysRemaining(trialCodesInGracePeriod[0].expires_at)} days. Upgrade now to keep it active!</>
+                ) : (
+                  <>You have {trialCodesInGracePeriod.length} trial QR codes expiring in the next 3 days. Upgrade to keep them active!</>
+                )}
+                <Link to="/pricing" className="ml-2 underline font-medium">
+                  Upgrade Now
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
           {/* Tabs */}
           <div className="flex justify-between items-center">
             <Tabs value={filter} onValueChange={setFilter}>
